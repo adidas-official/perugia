@@ -1,55 +1,29 @@
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image
+import re
 
 # img = 'https://drogeriefiala.cz/files/i/10%20807.jpg'
-print('Start')
-
-rootDir = 'https://drogeriefiala.cz'
-# source = requests.get(rootDir).text
-# soup = BeautifulSoup(source, 'lxml')
-# l = soup.find('ul', class_='m')
-# anchors = l.find_all('a')
-# for a in anchors:
-#     url = rootDir+a['href']
-#     print(url)
-#     r = requests.get(url).text
-#     s = BeautifulSoup(r,'lxml')
-
-r = requests.get(rootDir+'/duni')
-if r.ok:
-    source = BeautifulSoup(r.text, 'lxml')
-    lenOfPages = source.find('div', class_ = 'dd').text
-    print(lenOfPages)
-    # print(len(source.text))
-    axn = 'MDAuMDF8ZHVuaXwwfDYzNXwyMg=='
-    goload = 'https://drogeriefiala.cz/productlistnext.php?axn='+axn
-    s = requests.Session()
-    gl = s.get(goload).text
-
-
-url = rootDir + '/files/i/'
-treshold = 3
+kategorie_axn = {
+    'duni':'MDAuMDF8ZHVuaXwwfDYzNXwyMg==',
+    'katrin':'MDAuMDJ8a2F0cmlufDF8OTUzfDM=',
+    'papirova-hygiena':'MDAuMDN8cGFwaXJvdmEtaHlnaWVuYXwxfDk1NHw0',
+    'drogerie':'MDAuMDR8ZHJvZ2VyaWV8MXw2Njd8Mjg=',
+    'kosmetika':'MDAuMDV8a29zbWV0aWthfDB8NjkxfDI4',
+    'uklidove-ochranne-pomucky':'MDAuMDZ8dWtsaWRvdmUtb2NocmFubmUtcG9tdWNreXwwfDc2N3wyMQ==',
+    'zahradni-sezonni-produkty':'MDAuMDd8emFocmFkbmktc2V6b25uaS1wcm9kdWt0eXwwfDg1M3w2',
+    'technicke-kapaliny-lepidla':'MDAuMDh8dGVjaG5pY2tlLWthcGFsaW55LWxlcGlkbGF8MHw5MDJ8Mg',
+    'drobna-elektronika':'',
+    'dekorace-domacnost':'MDAuMTB8ZGVrb3JhY2UtZG9tYWNub3N0fDB8OTE2fDE1'
+}
 
 def drawBand(treshold, url):
 
-    for i in range(610, 2000):
-        fpath = list(f'{i:,}')
-        new_fpath = [sub.replace(',', ' ') for sub in fpath]
-        img = ''.join(new_fpath) + '.jpg'
-        u = url+img
-        r = requests.get(u, stream = True)
+        r = requests.get(url, stream = True)
 
-        '''
-        ###########
-        #.........#
-        #.........#
-        #.........#
-        #.........#
-        ###########
-        '''
         if r.ok:
-            print(img)
+            print(img['alt'])
+            print(img['src'])
             im = Image.open(r.raw)
             px = im.load()
             width, height = im.size
@@ -67,4 +41,33 @@ def drawBand(treshold, url):
             print(f'Celkove rozliseni obrazu: {width}x{height}')
             print('-'*60)
 
-# drawBand(treshold, url)
+rootDir = 'https://drogeriefiala.cz/'
+treshold = 3
+productList = rootDir+'productlistnext.php?axn='
+s = requests.Session()
+reqNum = 0
+
+for link, axn in kategorie_axn.items():
+    print('='*92)
+    print(link.upper().center(92))
+    print('='*92)
+    r = requests.get(rootDir+link)
+    if r.ok:
+        source = BeautifulSoup(r.text, 'lxml')
+
+        if source.find('div', class_ = 'dd'):
+            lenOfPages = source.find('div', class_ = 'dd').text
+            num = int(''.join(re.findall(r'[0-9]',lenOfPages)))
+        else:
+            num = 0
+
+        glRequest = productList + axn
+
+        for i in range(num // 24 + 1):
+            glResponse = s.get(glRequest).text
+            bs = BeautifulSoup(glResponse,'lxml')
+            for img in bs.find_all('img'):
+                reqNum += 1
+                drawBand(treshold, img['src'])
+
+print(reqNum)
