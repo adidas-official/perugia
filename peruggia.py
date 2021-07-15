@@ -41,14 +41,20 @@ def checkColor(image):
 
         l.sort(key=lambda tup: tup[1])
 
+        checked = {}
+
         for x,y in l:
-            print(f'Pos:({x};{y}), rgb: {px[x,y]}')
+            # print(f'Pos:({x};{y}), rgb: {px[x,y]}')
+            checked[f'{x},{y}'] = {'neighbors':[], 'color':px[x,y],'checked': True}
             for rgb in px[x,y]:
                 if rgb < 252:
-                    print(f'Not white: ({x};{y}), rgb: {px[x,y]}')
-                    return 0
+                    # print(f'Not white: ({x};{y}), rgb: {px[x,y]}')
+                    # return 0
                     break
 
+        for pos,info in checked.items():
+            x,y = pos.split(',')
+            print(f'Position: {x.zfill(3)}, {y.zfill(3)}, info: {info}')
 
 def run():
     rootDir = 'https://drogeriefiala.cz/'
